@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="PolySplat is a workload-regime-aware CUDA rasterizer for 3D Gaussian Splatting, evaluated on a stratified 76-target benchmark and a 9K 60Hz latency case study."
+    />
+    <meta property="og:title" content="PolySplat" />
+    <meta
+      property="og:description"
+      content="Workload-regime-aware rasterization for 3D Gaussian Splatting."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="assets/video/queue_latency_poster.jpg" />
+    <meta name="theme-color" content="#101820" />
+    <title>PolySplat | Workload-Regime-Aware Rasterization</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header" data-header>
+      <a class="brand" href="#top" aria-label="PolySplat home">
+        <span class="brand-mark"></span>
+        <span>PolySplat</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#abstract">Abstract</a>
+        <a href="#video">Video</a>
+        <a href="#method">Method</a>
+        <a href="#results">Results</a>
+        <a href="#resources">Resources</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <img
+          class="hero-media"
+          src="assets/video/queue_latency_poster.jpg"
+          alt="Queue-latency demo frame from a 9K city-scale trajectory"
+        />
+        <div class="hero-scrim"></div>
+        <div class="hero-inner">
+          <p class="eyebrow">3D Gaussian Splatting Rasterization</p>
+          <h1 id="hero-title">PolySplat</h1>
+          <p class="hero-subtitle">
+            Workload-regime-aware CUDA rasterization for robust 3DGS rendering
+            across extreme primitive counts, high resolutions, and interactive
+            60 Hz latency constraints.
+          </p>
+          <div class="hero-actions" aria-label="Project links">
+            <a class="button primary" href="#top">arXiv coming soon</a>
+            <a class="button" href="#video">Latency Demo</a>
+            <a class="button" href="#figures">Figures</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="metrics-band" aria-label="Headline metrics">
+        <div class="metric">
+          <strong>76</strong>
+          <span>benchmark targets</span>
+        </div>
+        <div class="metric">
+          <strong>56.5M</strong>
+          <span>max Gaussians</span>
+        </div>
+        <div class="metric">
+          <strong>9K</strong>
+          <span>max long edge</span>
+        </div>
+        <div class="metric">
+          <strong>6.48x</strong>
+          <span>vs. reference 3DGS</span>
+        </div>
+        <div class="metric">
+          <strong>0.00%</strong>
+          <span>60 Hz deadline misses</span>
+        </div>
+      </section>
+
+      <section id="abstract" class="section abstract-section" aria-labelledby="abstract-title">
+        <div class="section-kicker">Abstract</div>
+        <h2 id="abstract-title">Rasterization tuned for workload regimes</h2>
+        <p class="lead">
+          Rasterization dictates the interactive budget of 3D Gaussian Splatting
+          (3DGS). However, the comparative speed of modern CUDA rasterizers is
+          typically evaluated on a narrow canonical benchmark, masking severe
+          regime-dependent performance reversals.
+        </p>
+        <p>
+          PolySplat introduces a warp-saturating tile-key emitter with adaptive
+          three-way dispatch, asynchronous shared-memory staging in the render
+          kernel, and a persistent kernel architecture with centralized atomic
+          dispatch to bound tail latency. On an extended 76-target benchmark,
+          PolySplat achieves dataset-balanced geometric-mean speedups of
+          1.26x to 6.48x over state-of-the-art rasterizers at lossless visual
+          quality. Under sustained 60 Hz interaction at extreme resolutions,
+          PolySplat meets 1-vsync display deadlines where existing renderers
+          suffer queue divergence and input-to-photon lag.
+        </p>
+      </section>
+
+      <section id="video" class="section video-section" aria-labelledby="video-title">
+        <div class="section-kicker">Demo</div>
+        <div class="section-heading">
+          <div>
+            <h2 id="video-title">Sustained 60 Hz on a 9K city-scale trajectory</h2>
+            <p>
+              Mill19 Rubble, 3.19M Gaussians, 9216 x 6912 rendering, strict-order
+              1-vsync queue protocol.
+            </p>
+          </div>
+          <div class="compact-stats" aria-label="Latency comparison">
+            <span><b>60.00 fps</b> PolySplat</span>
+            <span><b>28.13 fps</b> gsplat</span>
+            <span><b>0.00%</b> misses</span>
+          </div>
+        </div>
+        <video
+          class="demo-video"
+          controls
+          preload="metadata"
+          poster="assets/video/queue_latency_poster.jpg"
+        >
+          <source src="assets/video/queue_latency_2way_ours.mp4" type="video/mp4" />
+        </video>
+      </section>
+
+      <section id="method" class="section" aria-labelledby="method-title">
+        <div class="section-kicker">Method</div>
+        <h2 id="method-title">Three CUDA mechanisms target the hidden bottlenecks</h2>
+        <div class="method-grid">
+          <article class="feature-card">
+            <h3>Warp-saturating tile-key emission</h3>
+            <p>
+              Adaptive dispatch routes single-tile, 2-31 tile, and large
+              multi-tile Gaussians into specialized paths so every warp lane
+              emits useful tile tasks.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Asynchronous shared-memory staging</h3>
+            <p>
+              Double-buffered feature staging overlaps irregular global-memory
+              gathers with pixel shading, removing exposed latency from the
+              render critical path.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Persistent centralized scheduling</h3>
+            <p>
+              Resident blocks pull tiles from an atomic global queue, reducing
+              terminal imbalance in heavy-tailed spatial workloads.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="figures" class="figures-section" aria-labelledby="figures-title">
+        <div class="section">
+          <div class="section-kicker">Paper Figures</div>
+          <h2 id="figures-title">System design and benchmark coverage</h2>
+          <div class="figure-stack">
+            <figure>
+              <button class="figure-button" type="button" data-lightbox="assets/figures/pre.png">
+                <img src="assets/figures/pre.png" alt="Adaptive three-way dispatch diagram" />
+              </button>
+              <figcaption>
+                Adaptive three-way dispatch routes uneven tile coverage into
+                specialized paths that feed uniform 32-lane task batches.
+              </figcaption>
+            </figure>
+            <figure>
+              <button class="figure-button" type="button" data-lightbox="assets/figures/async.png">
+                <img src="assets/figures/async.png" alt="Async double-buffer render pipeline timeline" />
+              </button>
+              <figcaption>
+                Async double-buffer pipeline overlaps feature loads with shading
+                once steady state begins.
+              </figcaption>
+            </figure>
+            <figure>
+              <button class="figure-button" type="button" data-lightbox="assets/figures/persistent.png">
+                <img src="assets/figures/persistent.png" alt="Persistent kernel scheduling compared to static tile scheduling" />
+              </button>
+              <figcaption>
+                Persistent tile dispatch keeps resident blocks fed through a
+                centralized counter and reduces terminal scheduling tails.
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section id="results" class="section results-section" aria-labelledby="results-title">
+        <div class="section-kicker">Results</div>
+        <div class="section-heading">
+          <div>
+            <h2 id="results-title">Robust speedups across all dataset buckets</h2>
+            <p>
+              Dataset-balanced geometric means show PolySplat accelerating the
+              forward pass over FlashGS, gsplat, Flash3DGS, and the INRIA 3DGS
+              reference while preserving visual quality.
+            </p>
+          </div>
+        </div>
+
+        <div class="speedup-grid" aria-label="Dataset-balanced speedups">
+          <div><strong>1.26x</strong><span>vs. FlashGS</span></div>
+          <div><strong>2.27x</strong><span>vs. gsplat</span></div>
+          <div><strong>4.58x</strong><span>vs. Flash3DGS</span></div>
+          <div><strong>6.48x</strong><span>vs. 3DGS</span></div>
+        </div>
+
+        <div class="result-figures">
+          <figure>
+            <button class="figure-button" type="button" data-lightbox="assets/figures/F4_wallclock_per_dataset.png">
+              <img src="assets/figures/F4_wallclock_per_dataset.png" alt="Per-dataset forward-pass wall-clock chart" />
+            </button>
+            <figcaption>Per-dataset forward-pass wall-clock on the 76-target benchmark.</figcaption>
+          </figure>
+          <figure>
+            <button class="figure-button" type="button" data-lightbox="assets/figures/F2a_stage_breakdown_balanced.png">
+              <img src="assets/figures/F2a_stage_breakdown_balanced.png" alt="Dataset-balanced stage breakdown chart" />
+            </button>
+            <figcaption>Dataset-balanced mean per-kernel time by pipeline stage.</figcaption>
+          </figure>
+        </div>
+
+        <div class="table-wrap" role="region" aria-label="Main benchmark summary" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th>Dataset</th>
+                <th>Targets</th>
+                <th>Cams</th>
+                <th>PolySplat ms</th>
+                <th>FlashGS ms</th>
+                <th>gsplat ms</th>
+                <th>Speedup vs gsplat</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>dl3dv</td><td>2</td><td>40</td><td>1.86</td><td>2.24</td><td>4.20</td><td>2.27x</td></tr>
+              <tr><td>eyeful</td><td>2</td><td>40</td><td>8.04</td><td>8.66</td><td>23.66</td><td>2.95x</td></tr>
+              <tr><td>flashgs_data</td><td>13</td><td>260</td><td>1.79</td><td>2.21</td><td>4.18</td><td>2.26x</td></tr>
+              <tr><td>h3dgs</td><td>4</td><td>80</td><td>7.26</td><td>12.18</td><td>9.74</td><td>1.37x</td></tr>
+              <tr><td>llff</td><td>8</td><td>160</td><td>1.80</td><td>2.08</td><td>5.04</td><td>2.80x</td></tr>
+              <tr><td>mill19</td><td>2</td><td>40</td><td>2.89</td><td>3.12</td><td>10.71</td><td>3.70x</td></tr>
+              <tr><td>nerfstudio</td><td>12</td><td>240</td><td>1.08</td><td>1.49</td><td>2.29</td><td>2.14x</td></tr>
+              <tr><td>seathru-nerf</td><td>4</td><td>78</td><td>0.76</td><td>1.08</td><td>1.54</td><td>2.03x</td></tr>
+              <tr><td>tanksandtemples</td><td>21</td><td>420</td><td>1.03</td><td>1.62</td><td>1.69</td><td>1.66x</td></tr>
+              <tr><td>urbanscene3d</td><td>1</td><td>20</td><td>5.31</td><td>5.70</td><td>14.00</td><td>2.64x</td></tr>
+              <tr><td>worldengine_navtest</td><td>3</td><td>60</td><td>0.63</td><td>0.70</td><td>1.52</td><td>2.41x</td></tr>
+              <tr><td>zipnerf</td><td>4</td><td>80</td><td>0.72</td><td>0.95</td><td>1.40</td><td>1.96x</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section case-section" aria-labelledby="case-title">
+        <div class="section-kicker">Latency Case Study</div>
+        <h2 id="case-title">Queue stability under sustained interaction</h2>
+        <div class="case-grid">
+          <div class="case-copy">
+            <p>
+              On a 360-frame, 6.0 s Mill19 Rubble trajectory at 9216 x 6912,
+              PolySplat keeps every render below the 16.67 ms 1-vsync budget.
+              gsplat sits above budget on nearly every frame, causing queue
+              divergence and seconds of input-to-photon lag.
+            </p>
+          </div>
+          <div class="latency-table">
+            <div><span>Deadline-miss ratio</span><b>0.00% vs 99.72%</b></div>
+            <div><span>Effective throughput</span><b>60.00 fps vs 28.13 fps</b></div>
+            <div><span>Time above 100 ms</span><b>0.00% vs 96.94%</b></div>
+            <div><span>Max input-to-photon</span><b>16.67 ms vs 3.22 s</b></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="resources" class="resources-band" aria-labelledby="resources-title">
+        <div class="section resources-inner">
+          <div>
+            <div class="section-kicker">Resources</div>
+            <h2 id="resources-title">Self-contained folder for GitHub Pages</h2>
+            <p>
+              The site includes converted web figures and the demo MP4. It can
+              be served as plain static files, with the paper link reserved for
+              the public arXiv version.
+            </p>
+          </div>
+          <div class="resource-links">
+            <a href="#top">arXiv coming soon</a>
+            <a href="assets/video/queue_latency_2way_ours.mp4">Open demo MP4</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>PolySplat: Workload-Regime-Aware Rasterization for 3D Gaussian Splatting</span>
+      <a href="#top">Back to top</a>
+    </footer>
+
+    <dialog class="lightbox" data-lightbox-dialog aria-label="Expanded figure">
+      <button class="lightbox-close" type="button" data-lightbox-close aria-label="Close expanded figure">Close</button>
+      <img alt="" data-lightbox-image />
+    </dialog>
+
+    <script src="script.js"></script>
+  </body>
+</html>
