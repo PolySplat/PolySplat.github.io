@@ -189,6 +189,12 @@ video {
   background: var(--coral);
 }
 
+.button.coming-soon {
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.86);
+}
+
 .metrics-band {
   width: min(1120px, calc(100% - 40px));
   margin: -42px auto 0;
@@ -545,8 +551,20 @@ tbody tr:last-child td {
   text-decoration: none;
 }
 
+.resource-links a.coming-soon {
+  color: var(--muted);
+  background: #f6f8fa;
+}
+
+.resource-links a.available {
+  border-color: var(--coral);
+  background: var(--coral);
+  color: #fff;
+}
+
 .site-footer {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 20px;
   padding: 28px clamp(20px, 4vw, 56px);
@@ -555,10 +573,25 @@ tbody tr:last-child td {
   font-size: 0.9rem;
 }
 
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px 16px;
+}
+
 .site-footer a {
   color: #fff;
   font-weight: 760;
   text-decoration: none;
+}
+
+.footer-links a.coming-soon {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.footer-links a.available {
+  color: #fff;
 }
 
 .lightbox {
@@ -684,6 +717,10 @@ tbody tr:last-child td {
   .site-footer,
   .latency-table div {
     flex-direction: column;
+  }
+
+  .footer-links {
+    justify-content: flex-start;
   }
 
   .button {
